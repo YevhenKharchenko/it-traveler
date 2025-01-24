@@ -1,6 +1,11 @@
 <script setup>
+import { computed, ref } from 'vue'
+import { useMutation } from '@/composables/useMutation.js'
+import { useModal } from '@/composables/useModal.js'
+import { updateFavoritePlace } from '@/api/favorite-places/index.js'
 import FavoritePlace from '../FavoritePlace/FavoritePlace.vue'
 import IButton from '../IButton/IButton.vue'
+import EditPlaceModal from '../EditPlaceModal/EditPlaceModal.vue'
 
 const props = defineProps({
   items: {
@@ -9,11 +14,31 @@ const props = defineProps({
   },
   activeId: {
     required: true,
-    type: [Number, null],
+    type: [String, null],
   },
 })
 
-const emit = defineEmits(['place-clicked', 'create'])
+const emit = defineEmits(['place-clicked', 'create', 'updated'])
+
+const { isOpen: isEditOpen, openModal: openEditModal, closeModal: closeEditModal } = useModal()
+const { mutation: updatePlace, isLoading } = useMutation({
+  mutationFn: (formData) => updateFavoritePlace(formData),
+  onSuccess: () => {
+    closeEditModal()
+    emit('updated')
+  },
+})
+const selectedId = ref(null)
+const selectedItem = computed(() => props.items.find((place) => place.id === selectedId.value))
+
+const handleEditPlace = (id) => {
+  selectedId.value = id
+  openEditModal()
+}
+
+const handleSubmit = (formData) => {
+  updatePlace(formData)
+}
 </script>
 
 <template>
@@ -30,6 +55,14 @@ const emit = defineEmits(['place-clicked', 'create'])
         :img="place.img"
         :is-active="place.id === props.activeId"
         @click="emit('place-clicked', place.id)"
+        @edit="handleEditPlace(place.id)"
+      />
+      <EditPlaceModal
+        :is-open="isEditOpen"
+        @close="closeEditModal"
+        :place="selectedItem"
+        @submit="handleSubmit"
+        :is-loading="isLoading"
       />
     </slot>
     <slot></slot>

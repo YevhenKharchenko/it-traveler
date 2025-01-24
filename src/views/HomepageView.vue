@@ -19,7 +19,7 @@ const { data, mutation: getPlaces } = useMutation({
   mutationFn: () => getFavoritePlaces(),
 })
 
-const favoritePlaces = computed(() => data.value?.data ?? [])
+const favoritePlaces = computed(() => data.value ?? [])
 
 const {
   mutation: addPlace,
@@ -29,6 +29,8 @@ const {
   mutationFn: (newPlaceData) => addFavoritePlace(newPlaceData),
   onSuccess: () => {
     closeModal()
+    mapMarkerLngLat.value = null
+    getPlaces()
   },
 })
 
@@ -37,9 +39,9 @@ const changeActiveId = (id) => {
 }
 
 const changePlace = (id) => {
-  const { lngLat } = favoritePlaces.value.find((place) => place.id === id)
+  const { coordinates } = favoritePlaces.value.find((place) => place.id === id)
   changeActiveId(id)
-  map.value.flyTo({ center: lngLat })
+  map.value.flyTo({ center: coordinates })
 }
 
 const handleMapClick = ({ lngLat }) => {
@@ -66,6 +68,7 @@ onMounted(() => {
         :active-id="activeId"
         @place-clicked="changePlace"
         @create="openModal"
+        @updated="getPlaces"
       />
       <CreateNewPlaceModal
         :is-open="isOpen"
@@ -94,8 +97,8 @@ onMounted(() => {
           :lngLat="place.coordinates"
           anchor="bottom"
         >
-          <button @click="changeActiveId(place.id)">
-            <MarkerIcon class="h-8 w-8" />
+          <button @click.stop="changeActiveId(place.id)">
+            <MarkerIcon class="h-8 w-8" is-active/>
           </button>
         </MapboxMarker>
       </MapboxMap> -->
